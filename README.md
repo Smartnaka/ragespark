@@ -1,138 +1,159 @@
-# ragespark
+# RageSpark — The Provocateur's Toolkit
 
-RageSpark is a project by Smartnaka. This repository contains the source, configuration, and documentation for the ragespark project.
+RageSpark is a small single‑page application (React + TypeScript + Vite) that helps creators brainstorm high‑engagement, provocative social posts ("ragebait") using AI-driven prompts and a set of engagement techniques. The app includes a Generator (AI-driven content output) and an Academy (short, copyable tactical lessons such as Cunningham's Law, gatekeeping, and the culinary offense).
 
-> NOTE: This README is a general, ready-to-edit starting point. If you want a README tailored to specifics (language, install steps, usage examples), tell me which language, framework, or how you run ragespark and I will update this file.
+This README explains what the app does, how the code is organized, how to run it locally, and important safety/security guidance — please read the Security & Ethics section before running or deploying.
 
-## Table of Contents
+Metadata (from metadata.json)
+- name: RageSpark: The Provocateur's Toolkit
+- description: An advanced engagement-focused application designed to help creators generate "ragebait" and provocative content through psychological triggers and AI-driven brainstorming, featuring built-in tutorials on engagement-hacking.
 
-- [About](#about)
-- [Features](#features)
-- [Getting Started](#getting-started)
-  - [Prerequisites](#prerequisites)
-  - [Installation](#installation)
-  - [Configuration](#configuration)
-  - [Running](#running)
-- [Usage](#usage)
-- [Development](#development)
-- [Testing](#testing)
-- [Contributing](#contributing)
-- [License](#license)
-- [Contact](#contact)
+Table of contents
+- About
+- Quick start
+- Project structure
+- How the generator works
+- Switching AI providers
+- Development
+- Security & ethics (important)
+- Recommended fixes (immediate)
+- Contributing & license
+- Contact
 
-## About
+About
+-----
+RageSpark is a front-end prototype that demonstrates how an AI model can be guided to produce short, high‑engagement social hooks plus an explanation of the strategy and the psychology behind them. It ships with:
 
-ragespark is a project maintained by Smartnaka. Its goal is to provide a well-structured, documented codebase for [describe purpose here — e.g., a web service, CLI tool, library, etc.]. This README is intended to give contributors and users a clear starting point.
+- A small tutorial "Academy" (constants.tsx) with engagement techniques.
+- A Generator UI (App.tsx) where users enter a topic, choose a heat level and platform, and request generated content.
+- Two service implementations that show how the app can call different AI backends:
+  - services/geminiService.ts — uses @google/genai (Gemini) and a JSON response schema.
+  - services/openaiService.ts — demonstrates a direct OpenAI API call (note: this file currently contains an inline API key — see Security & ethics below).
 
-## Features
+Quick start
+-----------
+Requirements
+- Node.js (recommended >= 18)
+- npm (or pnpm/yarn)
 
-- Briefly list key features or goals of the project
-- Example: Fast and minimal core
-- Example: Extensible plugin/adapter system
-- Example: Tests and CI-ready configuration
-
-## Getting Started
-
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
-
-### Prerequisites
-
-Replace these with the actual requirements for your project (examples below):
-
-- Git (>= 2.0)
-- A runtime or language toolchain (Node.js, Python, Java, Rust, etc.)
-- A package manager (npm/pnpm/yarn, pip, cargo, etc.)
-
-### Installation
-
-Clone the repo:
-
-```
+Install and run locally
+```bash
 git clone https://github.com/Smartnaka/ragespark.git
 cd ragespark
-```
-
-Install dependencies (example — replace with your stack):
-
-```
-# Node (example)
 npm install
-
-# Python (example)
-# python -m venv .venv
-# source .venv/bin/activate
-# pip install -r requirements.txt
+npm run dev
 ```
 
-### Configuration
+Open the app in your browser — Vite defaults to http://localhost:5173
 
-If the project requires configuration, document environment variables, config files, or secrets here. Example:
+Project structure (key files)
+-----------------------------
+- App.tsx — Main SPA, contains the Generator and Academy UI and form state.
+- index.tsx / index.html — Vite entry and HTML wrapper.
+- types.ts — Shared type definitions (GeneratorInput, GeneratedContent, HeatLevel, Tutorial).
+- constants.tsx — Built-in tutorials and examples used by the Academy.
+- services/
+  - geminiService.ts — Gemini (@google/genai) integration (recommended approach when using server-side keys).
+  - openaiService.ts — OpenAI example integration (currently includes a hardcoded key — see Security & ethics).
+- metadata.json — App metadata and short description.
+- package.json — Scripts and dependencies (React, Vite, @google/genai).
 
+How the generator works
+-----------------------
+- The UI collects a GeneratorInput:
+  - topic: string
+  - heat: one of HeatLevel (MILD, SPICY, RAGE, NUCLEAR)
+  - platform: 'X/Twitter' | 'TikTok' | 'Reddit' | 'YouTube'
+- It calls generateRagebait(...) from services/geminiService.ts (default).
+- The AI is prompted to return a JSON object with:
+  - hook: the short post text/headline
+  - strategy: the engagement technique used
+  - psychology: why that technique triggers engagement
+
+Switching AI providers
+----------------------
+By default App.tsx imports generateRagebait from services/geminiService.ts. To swap providers:
+
+- Geminis (recommended): keep using services/geminiService.ts and provide the API key securely on the server or in a server-side function. geminiService constructs a GoogleGenAI client and requests a typed JSON response.
+- OpenAI (example): services/openaiService.ts shows how to call the OpenAI chat completions endpoint and parse JSON. Note: This example currently contains a plaintext API key in the repository — do not run with that key; instead, refactor to use environment variables on a server.
+
+Development
+-----------
+Useful npm scripts (package.json)
+- npm run dev — run Vite dev server
+- npm run build — build production bundle
+- npm run preview — preview built output
+
+Notes
+- This is a TypeScript React app (tsconfig.json included).
+- Dev dependencies include @vitejs/plugin-react and TypeScript.
+
+Security & ethics (read before running or deploying)
+---------------------------------------------------
+The project intentionally generates provocative content. That raises important ethical, legal and platform policy questions.
+
+Safety guidance in the code
+- The service prompts include a "SAFETY RULE: Do not generate hate speech, harassment, or illegal content. Keep it to 'safe' controversies (food, tech, lifestyle, opinions)."
+
+Critical security issues discovered in the repository
+- services/openaiService.ts currently includes a plaintext OpenAI API key. This is a serious security issue — anyone with access to the repository can use/burn the key and it may lead to unexpected charges or abuse.
+
+Immediate recommended actions (please do these now)
+1. Remove the embedded key from services/openaiService.ts.
+2. Rotate/revoke the exposed OpenAI API key immediately from your provider dashboard.
+3. Move all API keys to secure server-side storage (environment variables, secret manager) and never expose them in client-side code or checked-in files.
+4. Use a server-side proxy or serverless function to perform AI calls; the front-end should never call third-party AI APIs directly with a secret key.
+5. Add a pre-commit or CI check to prevent secrets from being committed (e.g., git-secrets, detect-secrets).
+
+How to store keys safely
+- Use environment variables on the server or a serverless backend that the front-end calls.
+- Example (server): set API_KEY in your server environment and have a /api/generate endpoint that calls the AI provider and returns the JSON output.
+- If you must store build-time keys, do so as build secrets in your CI provider and avoid exposing them to client bundles.
+
+Ethics and policy
+- Do not use the app to generate or amplify content that targets protected groups, advocates harm, or violates platform rules.
+- Prefer "low‑stakes" controversies (taste, preferences, mild gatekeeping), and always include manual human review before posting.
+- Keep an audit log and human moderation step if deploying for multiple users.
+
+Recommended fixes (code-level)
+------------------------------
+- Replace the inline key in services/openaiService.ts with a call that reads from process.env or a server-side secret and ensure the file is never served to the client with secrets.
+- Implement a server-side /api/generate endpoint. Example flow:
+  - Frontend -> POST /api/generate { topic, heat, platform }
+  - Server -> calls GoogleGenAI or OpenAI using server-side secret -> returns JSON to frontend
+- Add a .env.example file (without real keys) and update docs to show how to run locally with safe patterns.
+- Add a CONTRIBUTING.md and SECURITY.md that instructs contributors about secrets and responsible disclosure.
+
+Example .env.example (do NOT commit real keys)
 ```
-# copy example env
-cp .env.example .env
-# edit .env with your settings
+# Example server env (do not commit real keys)
+API_KEY=your_server_side_ai_key_here
 ```
 
-### Running
+Contributing & license
+----------------------
+- This project currently has no license file. Add a LICENSE (MIT, Apache‑2.0, etc.) if you want to allow reuse.
+- Suggested contributor workflow:
+  1. Open an issue describing the change.
+  2. Fork the repo and create a feature branch.
+  3. Submit a PR.
 
-Provide the command used to run the project locally (examples):
+Contact
+-------
+Maintainer: Smartnaka  
+GitHub: https://github.com/Smartnaka
 
-```
-# Node
-npm start
+Appendix — Useful code pointers
+- App UI and tabs: App.tsx
+- Built-in tutorials: constants.tsx
+- Types and enums: types.ts
+- Gemini integration: services/geminiService.ts
+- OpenAI integration (example/unsafe until keys removed): services/openaiService.ts
+- Metadata: metadata.json
 
-# Python
-python -m ragespark
-```
+If you'd like, I can:
+- Update services/openaiService.ts to read its key from an environment variable and add a server-side example endpoint (Express or serverless) that proxies requests securely.
+- Create a SECURITY.md and .env.example and add a short CONTRIBUTING.md.
+- Add a license file of your choice.
 
-## Usage
-
-Show common usage examples, command-line options, or sample API requests. Keep examples copy-pasteable.
-
-```
-# Example CLI usage
-ragespark --input data/input.json --output results.json
-
-# Example API request
-curl -X POST "http://localhost:3000/process" -H "Content-Type: application/json" -d '{"key": "value"}'
-```
-
-## Development
-
-Explain how to set up a development environment, run linters, and what branch or commit conventions to follow.
-
-- Create a new branch for each feature or fix: `git checkout -b feat/my-feature`
-- Run linters/formatters before opening a PR
-- Keep commits small and focused
-
-## Testing
-
-Describe how to run tests and any testing conventions.
-
-```
-# Example
-npm test
-# or
-pytest
-```
-
-Include guidance for writing tests and running coverage if available.
-
-## Contributing
-
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) (if present) for details on how to contribute. Basic guidelines:
-
-- Open an issue for significant changes or proposals
-- Fork the repo and submit a pull request with a clear description
-- Add tests for new features or bug fixes
-
-## License
-
-This project does not include a license file yet. If you have a preferred license, add a `LICENSE` file to the repository and update this section. Common choices: MIT, Apache-2.0, GPL-3.0.
-
-## Contact
-
-Maintainer: Smartnaka
-
-If you'd like the README customized with concrete install/run steps for the project's actual language and tools, tell me which language(s) and how you run the project (CLI, web server, library), and I'll update this README accordingly.
+Important: I fetched repository files to create this README. The search results may be incomplete; view the project in GitHub to see all files: https://github.com/Smartnaka/ragespark
